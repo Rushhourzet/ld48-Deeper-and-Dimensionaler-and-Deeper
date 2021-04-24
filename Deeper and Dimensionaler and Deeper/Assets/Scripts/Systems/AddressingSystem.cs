@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class AddressingSystem : MonoBehaviour
-{
-    public UnityEvent event1;
+namespace DaD {
+    public class AddressingSystem : MonoBehaviour {
+        public UnityEvent GameStartEvent;
+        public UnityEvent MapInitialized;
+        public UnityEvent PlayerInitialized;
+    }
 }
