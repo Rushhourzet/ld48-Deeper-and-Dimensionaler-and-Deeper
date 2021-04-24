@@ -7,23 +7,58 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Events;
+using static DaD.Cube;
 
 namespace DaD {
     public class CubeSystem : MonoBehaviour {
-        private readonly static int CHUNK_SIZE = 32;
-        public GameObject cubePrefab;
+        private readonly static int CHUNK_SIZE = 16;
+        public Cube cubePrefab;
+        private List<Cube> cubes;
+        private List<Vector3> positionsLog;
+        public Dictionary<CubeType, Texture> textures;
         public AddressingSystem a_System;
+        private float cubeScale => cubePrefab.transform.localScale.x;
 
         public void Initialize() {
+            cubes = new List<Cube>((int)math.pow(CHUNK_SIZE, 2));
+            positionsLog = new List<Vector3>((int)math.pow(CHUNK_SIZE, 2));
             for (int x = 0; x < CHUNK_SIZE; x++) {
                 for (int z = 0; z < CHUNK_SIZE; z++) {
-                    //for (int y = 0; y > -CHUNK_SIZE; y--) {}
-                    Instantiate(cubePrefab, new Vector3(x, 0, z), Quaternion.identity);
+                    SpawnCube(cubePrefab, new Vector3(x * cubeScale, 0, z * cubeScale), AddCubeToList, false);
                 }
             }
             a_System.MapInitialized.Invoke();
         }
 
+        public void DestroyCube(Cube cube) {
+            Vector3 pos = cube.transform.position;
+            if(pos.y != 0f) {
+                SpawnCube(cubePrefab, new Vector3(pos.x - 1 * cubeScale, pos.y, pos.z), AddCubeToList, true);
+                SpawnCube(cubePrefab, new Vector3(pos.x + 1 * cubeScale, pos.y, pos.z), AddCubeToList, true);
+                SpawnCube(cubePrefab, new Vector3(pos.x, pos.y, pos.z - 1 * cubeScale), AddCubeToList, true);
+                SpawnCube(cubePrefab, new Vector3(pos.x, pos.y, pos.z + 1 * cubeScale), AddCubeToList, true);
+                SpawnCube(cubePrefab, new Vector3(pos.x, pos.y + 1 * cubeScale, pos.z), AddCubeToList, true);
+            }
+            SpawnCube(cubePrefab, new Vector3(pos.x, pos.y - 1 * cubeScale, pos.z), AddCubeToList, true);
+            a_System.InvokeCubeDestroyedEvent(cube, a_System.cubeDestroyedAction);
+            Destroy(cube.gameObject);
+        }
+        public void SpawnCube(Cube cube, Vector3 position, Action<Cube> addCubeToLists, bool checkIfPositionAvailable) {
+            if (checkIfPositionAvailable) {
+                foreach (var item in positionsLog) {
+                    if (position == item) return;
+                }
+            }
+            Cube tmp = Instantiate(cube, position, Quaternion.identity)
+                        //.withID((ulong)((position.x + 1) * (position.z + 1) * (position.y + 1)))
+                        .withSystem(this);
+            addCubeToLists(tmp);
+        }
+
+        public void AddCubeToList(Cube cube) {
+            positionsLog.Add(cube.transform.position);
+            cubes.Add(cube);
+        }
     }
 }
 

@@ -129,7 +129,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerCamera: {fileID: 2476123902317870675}
-  sens: 20
+  sens: 5
+  ms: 5
+  money: 500
 --- !u!1 &9060041563117128283
 GameObject:
   m_ObjectHideFlags: 0
