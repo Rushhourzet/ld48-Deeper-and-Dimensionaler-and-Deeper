@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using static DaD.AddressingSystem;
 
 namespace DaD {
     public class PlayerSystem : MonoBehaviour{
@@ -22,8 +23,15 @@ namespace DaD {
             }
             a_System.PlayerMoneyUpdated.Invoke();
         }
+        public void PlayerDamageUpdated() {
+            GetPlayerDamage(out int damage);
+            a_System.PlayerDamageUpdated(damage, a_System.playerDamageUpdatedAction);
+        }
         public void GetPlayerMoney(out ulong money) {
             money = player.money;
+        }
+        public void GetPlayerDamage(out int damage) {
+            damage = player.damage;
         }
     }
 }

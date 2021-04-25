@@ -338,7 +338,6 @@
 "Assets/Scripts/Systems/CubeSystem.cs"
 "Assets/Scripts/Systems/PlayerSystem.cs"
 "Assets/Scripts/Systems/UiSystem.cs"
-"Assets/UiSystem.cs"
 -langversion:8.0
 
 /deterministic

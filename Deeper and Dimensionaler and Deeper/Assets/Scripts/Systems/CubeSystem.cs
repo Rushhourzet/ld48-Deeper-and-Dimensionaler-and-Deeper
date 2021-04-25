@@ -18,32 +18,34 @@ namespace DaD {
         public Dictionary<CubeType, Texture> textures;
         public AddressingSystem a_System;
         private float cubeScale => cubePrefab.transform.localScale.x;
+        public int playerDamage;
 
         public void Initialize() {
+            a_System.playerDamageUpdatedAction = UpdatePlayerDamage;
             cubes = new List<Cube>((int)math.pow(CHUNK_SIZE, 2));
             positionsLog = new List<Vector3>((int)math.pow(CHUNK_SIZE, 2));
             for (int x = 0; x < CHUNK_SIZE; x++) {
                 for (int z = 0; z < CHUNK_SIZE; z++) {
-                    SpawnCube(cubePrefab, new Vector3(x * cubeScale, 0, z * cubeScale), AddCubeToList, false);
+                    SpawnCube(cubePrefab, new Vector3(x * cubeScale, 0, z * cubeScale), AddCubeToList, false, 0);
                 }
             }
             a_System.MapInitialized.Invoke();
         }
 
-        public void DestroyCube(Cube cube) {
+        public void DestroyCube(Cube cube, int overkillDamage) {
             Vector3 pos = cube.transform.position;
             if(pos.y != 0f) {
-                SpawnCube(cubePrefab, new Vector3(pos.x - 1 * cubeScale, pos.y, pos.z), AddCubeToList, true);
-                SpawnCube(cubePrefab, new Vector3(pos.x + 1 * cubeScale, pos.y, pos.z), AddCubeToList, true);
-                SpawnCube(cubePrefab, new Vector3(pos.x, pos.y, pos.z - 1 * cubeScale), AddCubeToList, true);
-                SpawnCube(cubePrefab, new Vector3(pos.x, pos.y, pos.z + 1 * cubeScale), AddCubeToList, true);
-                SpawnCube(cubePrefab, new Vector3(pos.x, pos.y + 1 * cubeScale, pos.z), AddCubeToList, true);
+                SpawnCube(cubePrefab, new Vector3(pos.x - 1 * cubeScale, pos.y, pos.z), AddCubeToList, true, overkillDamage);
+                SpawnCube(cubePrefab, new Vector3(pos.x + 1 * cubeScale, pos.y, pos.z), AddCubeToList, true, overkillDamage);
+                SpawnCube(cubePrefab, new Vector3(pos.x, pos.y, pos.z - 1 * cubeScale), AddCubeToList, true, overkillDamage);
+                SpawnCube(cubePrefab, new Vector3(pos.x, pos.y, pos.z + 1 * cubeScale), AddCubeToList, true, overkillDamage);
+                SpawnCube(cubePrefab, new Vector3(pos.x, pos.y + 1 * cubeScale, pos.z), AddCubeToList, true, overkillDamage);
             }
-            SpawnCube(cubePrefab, new Vector3(pos.x, pos.y - 1 * cubeScale, pos.z), AddCubeToList, true);
+            SpawnCube(cubePrefab, new Vector3(pos.x, pos.y - 1 * cubeScale, pos.z), AddCubeToList, true, overkillDamage);
             a_System.InvokeCubeDestroyedEvent(cube, a_System.cubeDestroyedAction);
             Destroy(cube.gameObject);
         }
-        public void SpawnCube(Cube cube, Vector3 position, Action<Cube> addCubeToLists, bool checkIfPositionAvailable) {
+        public void SpawnCube(Cube cube, Vector3 position, Action<Cube> addCubeToLists, bool checkIfPositionAvailable, int overkillDmg) {
             if (checkIfPositionAvailable) {
                 foreach (var item in positionsLog) {
                     if (position == item) return;
@@ -53,11 +55,16 @@ namespace DaD {
                         //.withID((ulong)((position.x + 1) * (position.z + 1) * (position.y + 1)))
                         .withSystem(this);
             addCubeToLists(tmp);
+            tmp.TakeDamage(overkillDmg);
         }
 
         public void AddCubeToList(Cube cube) {
             positionsLog.Add(cube.transform.position);
             cubes.Add(cube);
+        }
+
+        public void UpdatePlayerDamage(int damage) {
+            this.playerDamage = damage;
         }
     }
 }

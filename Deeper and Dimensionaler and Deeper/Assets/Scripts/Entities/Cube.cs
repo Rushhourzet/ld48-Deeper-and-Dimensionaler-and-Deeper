@@ -43,9 +43,13 @@ namespace DaD {
             hp = maxHp;
         }
         private void OnMouseDown() {
-            hp--;
-            if(hp <= 0) {
-                system.DestroyCube(this);
+            TakeDamage(system.playerDamage);
+        }
+        public void TakeDamage(int damage) {
+            hp-= damage;
+            if (hp <= 0) {
+                int overkillDmg = hp * -1;
+                system.DestroyCube(this, overkillDmg);
             }
             Debug.Log("You clicked me, my HP are " + hp);
         }

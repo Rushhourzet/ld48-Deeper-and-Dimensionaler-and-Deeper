@@ -11,6 +11,14 @@ namespace DaD {
         public UnityEvent PlayerMoneyUpdated;
         public delegate void CubeDestroyedEvent(Cube cube, CubeDestroyedAction action);
         public delegate void CubeDestroyedAction(Cube cube);
+        public delegate void PlayerDamageUpdatedEvent(int damage, PlayerDamageUpdatedAction action);
+        public delegate void PlayerDamageUpdatedAction(int damage);
+
+        public PlayerDamageUpdatedAction playerDamageUpdatedAction;
+        public PlayerDamageUpdatedEvent playerDamageTakenEvent;
+        public void PlayerDamageUpdated(int damage, PlayerDamageUpdatedAction action) {
+            action(damage);
+        }
 
         //public CubeDestroyedEvent cubeDestroyedEvent;
         public CubeDestroyedAction cubeDestroyedAction;

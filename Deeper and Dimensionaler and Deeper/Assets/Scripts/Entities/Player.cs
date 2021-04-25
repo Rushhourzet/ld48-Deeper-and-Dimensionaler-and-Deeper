@@ -18,6 +18,7 @@ namespace DaD {
         public float ms = 5f;
 
         public ulong money = 500;
+        public int damage = 1;
 
         void Update() {
             if(Cursor.lockState == CursorLockMode.Locked) {
