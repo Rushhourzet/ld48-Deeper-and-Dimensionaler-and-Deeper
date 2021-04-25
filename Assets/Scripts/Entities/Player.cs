@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using UnityEngine;
 namespace DaD {
     public class Player : MonoBehaviour {
+        public PlayerSystem system;
         public delegate void MovePlayerDel(in PlayerInputDel input);
         public delegate void RotatePlayerDel(in PlayerInputDel rotation);
         public delegate void PlayerInputDel(out Vector3 vector);
@@ -22,7 +23,8 @@ namespace DaD {
 
         public ulong money;
         public int damage = 1;
-        private void FixedUpdate() {
+        private void Start() {
+            rb.maxAngularVelocity = 0;
         }
 
         void Update() {
@@ -35,6 +37,10 @@ namespace DaD {
             this.money = money;
             return this;
         }
+        public Player withPlayerSystem(PlayerSystem system) {
+            this.system = system;
+            return this;
+        }
         public void PlayerMovement(in MovePlayerDel movePlayer, in RotatePlayerDel rotatePlayer) {
             movePlayer(gatherMoveInput);
             rotatePlayer(gatherRotInput);
@@ -43,7 +49,7 @@ namespace DaD {
         public void GatherMovementInput(out Vector3 movement) {
             movement = new Vector3(
                 Input.GetAxis("Horizontal"),
-                Input.GetButton("Jump") == true ? 1f : 0f,
+                Input.GetButton("Jump") == true ? 1f : Input.GetButton("Down") == true ? -1f : 0f,
                 Input.GetAxis("Vertical"));
         }
         public void GatherRotationInput(out Vector3 rotation) {
@@ -59,12 +65,16 @@ namespace DaD {
             playerCamera.transform.Rotate(rotation.x * sens * -1, 0f, 0f);
         }
         private void CursorLockHandle() {
-            if (Cursor.lockState == CursorLockMode.None && Input.GetButton("Fire1")) {
+            
+            if (Cursor.lockState == CursorLockMode.None && Input.GetButton("Cancel")) {
                 Cursor.lockState = CursorLockMode.Locked;
             }
             else if (Cursor.lockState == CursorLockMode.Locked && Input.GetButtonDown("Cancel")) {
                 Cursor.lockState = CursorLockMode.None;
             }
+        }
+        public void LockCursor() {
+            Cursor.lockState = CursorLockMode.Locked;
         }
 
     }

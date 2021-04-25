@@ -6,6 +6,7 @@ namespace DaD {
         public AddressingSystem a_System;
         void Start() {
             a_System.GameStartEvent.Invoke();
+            Cursor.lockState = CursorLockMode.Locked;
         }
 
         // Update is called once per frame

@@ -13,6 +13,7 @@ namespace DaD {
         public int maxHp;
         public ulong id;
         private int hp;
+        private float delta;
 
         private Renderer renderer => GetComponent<Renderer>();
         private CubeDestroyedAction cubeDestroyedAction_destroy;
@@ -64,15 +65,26 @@ namespace DaD {
         //            break;
         //        }
         //}
+        private void OnMouseOver() {
+            delta += Time.deltaTime;
+            if(delta >= .5f) {
+                if (Cursor.lockState == CursorLockMode.Locked)
+                    TakeDamage(system.playerDamage);
+                delta = 0;
+            }
+        }
         private void OnMouseDown() {
-            TakeDamage(system.playerDamage);
+            if (Cursor.lockState == CursorLockMode.Locked)
+                TakeDamage(system.playerDamage);
         }
         public void TakeDamage(int damage) {
             hp -= damage;
             if (hp <= 0) {
                 int overkillDmg = hp * -1;
                 //Debug.Log(overkillDmg);
-                system.DestroyCube(this, this.transform.position, overkillDmg) ;
+                if(this != null) {
+                    system.AddDestroyCubeCommandToBuffer(new DestroyCubeCommand(this, this.transform.position, overkillDmg));
+                }
             }
             //Debug.Log("You clicked me, my HP are " + hp);
         }

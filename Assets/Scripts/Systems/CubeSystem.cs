@@ -14,14 +14,16 @@ using Random = UnityEngine.Random;
 namespace DaD {
     public class CubeSystem : MonoBehaviour {
         private readonly static int CHUNK_SIZE = 16;
+        public UiSystem ui_system;
         public Cube cubePrefab;
-        private List<Cube> cubes;
+        private Dictionary<Vector3, Cube> cubes;
         private List<Vector3> positionsLog;
         public Dictionary<CubeType, Texture> textures;
         public AddressingSystem a_System;
         public Material[] materials;
 
         public List<SpawnCubeCommand> spawnCubeCommandBuffer;
+        public List<DestroyCubeCommand> destroyCubeCommandBuffer;
 
         private float cubeScale => cubePrefab.transform.localScale.x;
         public int playerDamage;
@@ -30,40 +32,65 @@ namespace DaD {
             if (spawnCubeCommandBuffer.Count > 0) {
                 SpawnCubes(ref spawnCubeCommandBuffer);
             }
+            if (destroyCubeCommandBuffer.Count > 0) {
+                DestroyCubes(ref destroyCubeCommandBuffer);
+            }
         }
         public void Initialize() {
             spawnCubeCommandBuffer = new List<SpawnCubeCommand>();
+            destroyCubeCommandBuffer = new List<DestroyCubeCommand>();
             a_System.playerDamageUpdatedAction = UpdatePlayerDamage;
-            cubes = new List<Cube>((int)math.pow(CHUNK_SIZE, 2));
+            cubes = new Dictionary<Vector3, Cube>((int)math.pow(CHUNK_SIZE, 2));
             positionsLog = new List<Vector3>((int)math.pow(CHUNK_SIZE, 2));
             for (int x = 0; x < CHUNK_SIZE; x++) {
                 for (int z = 0; z < CHUNK_SIZE; z++) {
                     for (int y = 0; y < CHUNK_SIZE; y++) {
-                        if (y > 0) {
+                        if ((y > 1 && y <CHUNK_SIZE-1) && (x > 1 && x < CHUNK_SIZE-1) && (z > 1 && z < CHUNK_SIZE-1)) {
                             //blocking spawn area
                             positionsLog.Add(new Vector3(x * cubeScale, y * cubeScale, z * cubeScale));
                         }
+                        else {
+                            spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(x * cubeScale, y * cubeScale, z * cubeScale), AddCubeToList, false, 0));
+                        }
                     }
-                    spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(x * cubeScale, 0, z * cubeScale), AddCubeToList, false, 0));
-
+                }
+            }
+            for (int x = -1; x < CHUNK_SIZE+1; x++) {
+                for (int z = -1; z < CHUNK_SIZE+1; z++) {
+                    for (int y = -1; y < CHUNK_SIZE+1; y++) {
+                        if (y > 0) {
+                            //blocking spawn area
+                        }
+                    }
                 }
             }
             a_System.MapInitialized.Invoke();
         }
-
-        public void DestroyCube(Cube cube, Vector3 pos, int overkillDamage) {
-            if (cube != null) {
-                a_System.InvokeCubeDestroyedEvent(cube);
-                Destroy(cube.gameObject);
+        public void AddDestroyCubeCommandToBuffer(DestroyCubeCommand command) {
+            destroyCubeCommandBuffer.Add(command);
+        }
+        public void DestroyCubes(ref List<DestroyCubeCommand> commandList) {
+            while (commandList.Count > 0) {
+                DestroyCube(commandList.First());
+                commandList.RemoveAt(0);
+            }
+        }
+        public void DestroyCube(DestroyCubeCommand command) {
+            Vector3 pos = command.pos;
+            int overkillDamage = command.overkillDamage;
+            if (command.cube != null) {
+                a_System.InvokeCubeDestroyedEvent(command.cube);
+                Destroy(command.cube.gameObject);
+                cubes.Remove(command.cube.transform.position);
             }
             int primaryDamage = overkillDamage / 3;
             //spawn direct neighbours - primary spawn
-            spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(pos.x - 1 * cubeScale, pos.y, pos.z), AddCubeToList, true, overkillDamage));
-            spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(pos.x + 1 * cubeScale, pos.y, pos.z), AddCubeToList, true, overkillDamage));
-            spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(pos.x, pos.y, pos.z - 1 * cubeScale), AddCubeToList, true, overkillDamage));
-            spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(pos.x, pos.y, pos.z + 1 * cubeScale), AddCubeToList, true, overkillDamage));
-            spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(pos.x, pos.y + 1 * cubeScale, pos.z), AddCubeToList, true, overkillDamage));
-            spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(pos.x, pos.y - 1 * cubeScale, pos.z), AddCubeToList, true, overkillDamage));
+            spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(pos.x - 1 * cubeScale, pos.y, pos.z), AddCubeToList, true, primaryDamage));
+            spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(pos.x + 1 * cubeScale, pos.y, pos.z), AddCubeToList, true, primaryDamage));
+            spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(pos.x, pos.y, pos.z - 1 * cubeScale), AddCubeToList, true, primaryDamage));
+            spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(pos.x, pos.y, pos.z + 1 * cubeScale), AddCubeToList, true, primaryDamage));
+            spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(pos.x, pos.y + 1 * cubeScale, pos.z), AddCubeToList, true, primaryDamage));
+            spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(pos.x, pos.y - 1 * cubeScale, pos.z), AddCubeToList, true, primaryDamage));
             //spawn Diagonally - secondary spawn
             int secondaryDamage = overkillDamage / 4;
             spawnCubeCommandBuffer.Add(new SpawnCubeCommand(cubePrefab, new Vector3(pos.x - 1 * cubeScale, pos.y, pos.z - 1 * cubeScale), AddCubeToList, true, secondaryDamage));
@@ -110,21 +137,23 @@ namespace DaD {
             if (command.checkIfPositionAvailable) {
                 foreach (var item in positionsLog) {
                     if (command.position == item) {
-                        //Debug.Log("Position already exists");
+                        if (cubes.TryGetValue(command.position, out Cube cube_)) {
+                            cube_.TakeDamage(command.overkillDmg);
+                        }
                         return;
                     }
                 }
             }
-            CubeType type = (CubeType)Random.Range(1, 6);
-            Debug.Log(type);
+            CubeType type = (CubeType)Random.Range(1, 7);
+            //Debug.Log(type);
             int maxHp = ((int)type) * 3;
-            Debug.Log(maxHp);
+            //Debug.Log(maxHp);
             if(command.overkillDmg <= maxHp) {
                 Cube tmp = Instantiate(command.cube, command.position, Quaternion.identity)
                         //.withID((ulong)((position.x + 1) * (position.z + 1) * (position.y + 1)))
                         .withSystem(this)
                         .withMaxHP(maxHp)
-                        .withMaterial(materials[(int)type])
+                        .withMaterial(materials[(int)type-1])
                         .withType(type);
                 AddCubeToList(tmp);
                 tmp.transform.parent = this.transform;
@@ -133,7 +162,7 @@ namespace DaD {
                 }
             }
             else {
-                DestroyCube(null, command.position, command.overkillDmg - 3);
+                AddDestroyCubeCommandToBuffer(new DestroyCubeCommand(null, command.position, command.overkillDmg - maxHp));
             }
         }
 
@@ -152,7 +181,7 @@ namespace DaD {
 
         public void AddCubeToList(Cube cube) {
             positionsLog.Add(cube.transform.position);
-            cubes.Add(cube);
+            cubes.Add(cube.transform.position, cube);
         }
 
         public void UpdatePlayerDamage(int damage) {
